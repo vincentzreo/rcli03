@@ -8,6 +8,8 @@ use std::path::{Path, PathBuf};
 
 use clap::Parser;
 
+use crate::CmdExecutor;
+
 pub use self::base64::{Base64Format, Base64SubCommand};
 pub use self::csv::CsvOpts;
 pub use self::csv::OutputFormat;
@@ -29,11 +31,11 @@ pub enum SubCommand {
     Csv(CsvOpts),
     #[command(name = "genpass", about = "Generate a random password")]
     GenPass(GenPassOpts),
-    #[command(subcommand)]
+    #[command(subcommand, about = "Base64 encode or decode")]
     Base64(Base64SubCommand),
-    #[command(subcommand)]
+    #[command(subcommand, about = "Text signing and verification")]
     Text(TextSubCommand),
-    #[command(subcommand)]
+    #[command(subcommand, about = "HTTP server")]
     Http(HttpSubCommand),
 }
 
@@ -51,6 +53,18 @@ fn verify_path(path: &str) -> Result<PathBuf, &'static str> {
         Ok(path.into())
     } else {
         Err("Path does not exist or is not a directory")
+    }
+}
+
+impl CmdExecutor for SubCommand {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            SubCommand::Csv(opts) => opts.execute().await,
+            SubCommand::GenPass(opts) => opts.execute().await,
+            SubCommand::Base64(subcmd) => subcmd.execute().await,
+            SubCommand::Text(subcmd) => subcmd.execute().await,
+            SubCommand::Http(subcmd) => subcmd.execute().await,
+        }
     }
 }
 
